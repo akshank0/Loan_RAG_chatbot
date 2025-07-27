@@ -34,7 +34,7 @@ st.markdown("Ask questions based on real loan data and get smart answers using *
 # 📁 Load and cache
 @st.cache_resource
 def setup():
-    sentences = preprocess_data("data/loan_data.csv")
+    sentences = preprocess_data("data/Training_Dataset.csv")
     index, model = build_faiss_index(sentences)
     return sentences, index, model
 
