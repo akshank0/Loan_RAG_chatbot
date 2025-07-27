@@ -37,10 +37,14 @@ st.markdown('<div class="subtitle">Ask questions based on real loan applicant da
 # Input box
 query = st.text_input("💬 What would you like to know?")
 
-# On user query
+@st.cache_resource(show_spinner="🔍 Indexing loan data...")
+def load_store():
+    return VectorStore()
+
+store = load_store()
+
 if query:
     with st.spinner("🔍 Searching through loan data..."):
-        store = VectorStore()
         context = store.search(query)
         answer = ask_gemini(query, context)
 

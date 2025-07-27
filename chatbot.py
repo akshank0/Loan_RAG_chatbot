@@ -21,3 +21,4 @@ Question: {question}
 """
     response = model.generate_content(prompt)
     return response.text.strip()
+
