@@ -1,7 +1,7 @@
 import pandas as pd
-import numpy as np
-import faiss
 from sentence_transformers import SentenceTransformer
+import chromadb
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 class VectorStore:
     def __init__(self, path="data/Training_Dataset.csv"):
@@ -9,8 +9,15 @@ class VectorStore:
         self._preprocess()
         self.sentences = self.df.apply(self._row_to_sentence, axis=1).tolist()
         self.sentences.append(self._generate_summary())
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.index = self._build_index()
+
+        self.embedding_fn = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+        self.client = chromadb.Client()
+        self.collection = self.client.create_collection(
+            name="loan_data",
+            embedding_function=self.embedding_fn
+        )
+
+        self._build_index()
 
     def _preprocess(self):
         df = self.df
@@ -49,13 +56,10 @@ class VectorStore:
         return f"Out of {total} total applications, {approved} were approved. Average applicant income: ₹{avg_income}."
 
     def _build_index(self):
-        embeddings = self.model.encode(self.sentences, show_progress_bar=True)
-        index = faiss.IndexFlatL2(embeddings.shape[1])
-        index.add(np.array(embeddings))
-        self.embeddings = embeddings
-        return index
+        # Add sentences to chroma collection
+        for i, sentence in enumerate(self.sentences):
+            self.collection.add(documents=[sentence], ids=[str(i)])
 
     def search(self, query, k=5):
-        q_embed = self.model.encode([query])
-        _, indices = self.index.search(np.array(q_embed), k)
-        return [self.sentences[i] for i in indices[0]]
+        results = self.collection.query(query_texts=[query], n_results=k)
+        return results["documents"][0] if results["documents"] else []

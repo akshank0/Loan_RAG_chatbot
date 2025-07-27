@@ -1,5 +1,5 @@
 streamlit
-faiss-cpu
+chromadb
 sentence-transformers
 google-generativeai
 pandas
