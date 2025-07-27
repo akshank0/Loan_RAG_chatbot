@@ -4,7 +4,7 @@ import faiss
 from sentence_transformers import SentenceTransformer
 
 class VectorStore:
-    def __init__(self, path="data/loan_data.csv"):
+    def __init__(self, path="data/Training_Data.csv"):
         self.df = pd.read_csv(path)
         self._preprocess()
         self.sentences = self.df.apply(self._row_to_sentence, axis=1).tolist()

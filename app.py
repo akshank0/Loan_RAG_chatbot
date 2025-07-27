@@ -1,61 +1,54 @@
-# app.py
 import streamlit as st
-from vectorstore import preprocess_data, build_faiss_index
+from vectorstore import VectorStore
 from chatbot import ask_gemini
 
-st.set_page_config(page_title="Loan Assistant", page_icon="💰", layout="wide")
+# Page config
+st.set_page_config(page_title="Loan RAG Chatbot", page_icon="💬", layout="centered")
 
-# 🎨 Custom CSS
+# Custom CSS for styling
 st.markdown("""
-<style>
-    .stChatInput {
-        font-size: 16px;
-    }
-    .chat-box {
-        border-radius: 12px;
-        padding: 10px 16px;
-        margin-bottom: 10px;
-        background-color: #f0f2f6;
-    }
-    .chat-question {
-        font-weight: bold;
-        color: #2c3e50;
-    }
-    .chat-answer {
-        color: #34495e;
-    }
-</style>
+    <style>
+        .main {
+            background-color: #f4f6f9;
+        }
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: #2C3E50;
+        }
+        .subtitle {
+            font-size: 1.1rem;
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        .stTextInput > div > div > input {
+            font-size: 1.1rem;
+            padding: 10px;
+        }
+    </style>
 """, unsafe_allow_html=True)
 
-# 📊 Header
-st.markdown("## 💰 Loan Approval Assistant")
-st.markdown("Ask questions based on real loan data and get smart answers using **Gemini AI + FAISS**.")
+# App Header
+st.markdown('<div class="title">📊 Loan Approval Chatbot</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Ask questions based on real loan applicant data</div>', unsafe_allow_html=True)
 
-# 📁 Load and cache
-@st.cache_resource
-def setup():
-    sentences = preprocess_data("data/Training_Dataset.csv")
-    index, model = build_faiss_index(sentences)
-    return sentences, index, model
+# Input box
+query = st.text_input("💬 What would you like to know?")
 
-sentences, index, model = setup()
+# On user query
+if query:
+    with st.spinner("🔍 Searching through loan data..."):
+        store = VectorStore()
+        context = store.search(query)
+        answer = ask_gemini(query, context)
 
-# 📌 Sidebar Instructions
-with st.sidebar:
-    st.markdown("### 📌 Instructions")
-    st.markdown("- Ask about patterns like:\n  - _What kind of applicants get approved?_\n  - _Does higher income lead to approval?_\n  - _What is the role of credit history?_")
-    st.markdown("- Your questions are matched with real data.\n- Powered by **Gemini API + Embeddings**.")
-    st.markdown("---")
-    st.markdown("Made with ❤️ by Akshank")
+    # Display Answer
+    st.markdown("### ✅ Answer")
+    st.success(answer)
 
-# 💬 Chat Interface
-st.markdown("### 🧠 Ask a Question")
-
-question = st.text_input("🔍 Type your question here", placeholder="e.g., Does being self-employed affect loan approval?")
-if question:
-    with st.spinner("🤖 Thinking..."):
-        answer = ask_gemini(question, sentences, index, model)
-
-        # Display Q&A
-        st.markdown(f"""<div class='chat-box chat-question'>🧑‍💼 You: {question}</div>""", unsafe_allow_html=True)
-        st.markdown(f"""<div class='chat-box chat-answer'>🤖 Gemini: {answer}</div>""", unsafe_allow_html=True)
+    # Expandable retrieved context
+    with st.expander("📄 Show Retrieved Context", expanded=False):
+        for i, chunk in enumerate(context, 1):
+            st.markdown(f"**{i}.** {chunk}")
